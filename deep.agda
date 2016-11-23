@@ -3,6 +3,14 @@ module deep where
 open import Data.Bool using (Bool; true; false) renaming (_∧_ to _&&_; _∨_ to _||_; not to !_)
 open import Data.Nat
 
+infixl 0 _==_
+infixr 2 _⟹_
+infixr 3 _⊃_
+infixl 5 _∨_
+infixl 6 _∧_
+infixr 8 ¬_
+infixl 9 _╲_
+
 data Form : Set where
   Atom : ℕ → Form
   ⊥ : Form
@@ -19,10 +27,10 @@ _==_ : Form → Form → Bool
     eqℕ zero (suc n) = false
     eqℕ (suc m) zero = false
     eqℕ (suc m) (suc n) = eqℕ m n
-(¬ P) == (¬ P') = P == P'
-(P ∨ Q) == (P' ∨ Q') = (P == P') || (Q == Q')
-(P ∧ Q) == (P' ∧ Q') = (P == P') && (Q == Q')
-(P ⊃ Q) == (P' ⊃ Q') = (P == P') && (Q == Q')
+¬ P == ¬ P' = P == P'
+P ∨ Q == P' ∨ Q' = (P == P') || (Q == Q')
+P ∧ Q == P' ∧ Q' = (P == P') && (Q == Q')
+P ⊃ Q == P' ⊃ Q' = (P == P') && (Q == Q')
 _ == _ = false
 
 ev : Form → (ℕ → Bool) → Bool
@@ -41,40 +49,35 @@ _╲_ : List Form → Form → List Form
 ... | true = Ps ╲ Q
 ... | false = P ∷ (Ps ╲ Q)
 
-infixr 3 _⊃_
-infixl 5 _∨_
-infixl 6 _∧_
-infixr 8 ¬_
-
-data Proof : List Form → Form → Set where
-  Assume : (P : Form) → Proof (P ∷ []) P
+data _⟹_ : List Form → Form → Set where
+  Assume : (P : Form) → (P ∷ []) ⟹ P
   ⊥Elim : {fs : List Form}{P : Form} →
-          Proof fs ⊥ → Proof fs P
+          fs ⟹ ⊥ → fs ⟹ P
   ¬Intro : {fs : List Form}{P : Form} →
-           Proof fs ⊥ → Proof (fs ╲ P) (¬ P)
+           fs ⟹ ⊥ → fs ╲ P ⟹ ¬ P
   ¬Elim : {fs gs : List Form}{P : Form} →
-          Proof fs P → Proof gs (¬ P) → Proof (fs ++ gs) ⊥
+          fs ⟹ P → gs ⟹ ¬ P → (fs ++ gs) ⟹ ⊥
   ∧Intro : {fs gs : List Form}{P Q : Form} →
-           Proof fs P → Proof gs Q → Proof (fs ++ gs) (P ∧ Q)
+           fs ⟹ P → gs ⟹ Q → (fs ++ gs) ⟹ P ∧ Q
   ∧Elim₁ : {fs : List Form}{P Q : Form} →
-           Proof fs (P ∧ Q) → Proof fs P
+           fs ⟹ P ∧ Q → fs ⟹ P
   ∧Elim₂ : {fs : List Form}{P Q : Form} →
-           Proof fs (P ∧ Q) → Proof fs Q
+           fs ⟹ P ∧ Q → fs ⟹ Q
   ∨Intro₁ : {fs : List Form}{P Q : Form} →
-            Proof fs P → Proof fs (P ∨ Q)
+            fs ⟹ P → fs ⟹ P ∨ Q
   ∨Intro₂ : {fs : List Form}{P Q : Form} →
-            Proof fs Q → Proof fs (P ∨ Q)
+            fs ⟹ Q → fs ⟹ P ∨ Q
   ∨Elim : {fs gs hs : List Form}{P Q R : Form} →
-          Proof fs (P ∨ Q) → Proof gs R → Proof hs R → Proof (fs ++ (gs ╲ P) ++ (hs ╲ Q)) R
+          fs ⟹ P ∨ Q → gs ⟹ R → hs ⟹ R → (fs ++ gs ╲ P ++ hs ╲ Q) ⟹ R
   ⊃Intro : {fs : List Form}{P Q : Form} →
-           Proof fs Q → Proof (fs ╲ P) (P ⊃ Q)
+           fs ⟹ Q → fs ╲ P ⟹ P ⊃ Q
   ⊃Elim : {fs gs : List Form}{P Q : Form} →
-          Proof fs P → Proof gs (P ⊃ Q) → Proof (fs ++ gs) Q
+          fs ⟹ P → gs ⟹ P ⊃ Q → (fs ++ gs) ⟹ Q
   -- for Classical logic, if you expect intuition, then you comment out below LEM
-  LEM : (P : Form) → Proof [] (P ∨ (¬ P))
+  LEM : (P : Form) → [] ⟹ P ∨ ¬ P
 
 -- proof DNE
 A : Form
 A = Atom 0
-DNE0 : Proof [] (¬ ¬ A ⊃ A)
+DNE0 : [] ⟹ (¬ ¬ A ⊃ A)
 DNE0 = ⊃Intro (∨Elim (LEM A) (Assume A) (⊥Elim (¬Elim (Assume (¬ A)) (Assume (¬ ¬ A)))))
