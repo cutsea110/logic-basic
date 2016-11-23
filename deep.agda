@@ -41,6 +41,11 @@ _╲_ : List Form → Form → List Form
 ... | true = Ps ╲ Q
 ... | false = P ∷ (Ps ╲ Q)
 
+infixr 3 _⊃_
+infixl 5 _∨_
+infixl 6 _∧_
+infixr 8 ¬_
+
 data Proof : List Form → Form → Set where
   Assume : (P : Form) → Proof (P ∷ []) P
   ⊥Elim : {fs : List Form}{P : Form} →
@@ -71,5 +76,5 @@ data Proof : List Form → Form → Set where
 -- proof DNE
 A : Form
 A = Atom 0
-DNE0 : Proof [] ((¬ ¬ A) ⊃ A)
+DNE0 : Proof [] (¬ ¬ A ⊃ A)
 DNE0 = ⊃Intro (∨Elim (LEM A) (Assume A) (⊥Elim (¬Elim (Assume (¬ A)) (Assume (¬ ¬ A)))))
