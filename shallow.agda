@@ -8,6 +8,7 @@ data ⊥ : Set where
 -- propositional logic
 
 -- conjunction
+infixl 6 _∧_
 record _∧_ (P Q : Set) : Set where
   field
     Elim₁ : P
@@ -17,6 +18,7 @@ record _∧_ (P Q : Set) : Set where
 ∧Intro p q = record { Elim₁ = p ; Elim₂ = q }
 
 -- disjunction
+infixl 5 _∨_
 data _∨_ (P Q : Set) : Set where
   ∨Intro₁ : P → P ∨ Q
   ∨Intro₂ : Q → P ∨ Q
@@ -26,6 +28,7 @@ data _∨_ (P Q : Set) : Set where
 ∨Elim (∨Intro₂ b) _    prfQ = prfQ b
 
 -- imply
+infixr 3 _⊃_
 data _⊃_ (P Q : Set) : Set where
   ⊃Intro : (P → Q) → P ⊃ Q
 
@@ -36,6 +39,7 @@ _!_ : {P Q : Set} → P ⊃ Q → P → Q
 _!_ = ⊃Elim
 
 -- negation
+infixr 8 ¬_
 ¬_ : Set → Set
 ¬ P = P ⊃ ⊥
 
@@ -64,23 +68,22 @@ record ∃' (P : Set) (Q : P → Set) : Set where
 ∃'Intro e prf = record { evidence = e ; Elim = prf }
 
 -- proof tautologies
-p1 : (A B : Set) → (A ∧ B) ⊃ (A ∨ B)
-p1 A B = ⊃Intro (λ x → ∨Intro₁ (_∧_.Elim₁ x))
+p1 : (A B : Set) → A ∧ B ⊃ A ∨ B
+p1 A B = ⊃Intro (λ x → ∨Intro₁ (Elim₁ x)) where open _∧_
 
-p2 : (A B : Set) → (A ∧ B) ⊃ (A ∨ B)
-p2 A B = ⊃Intro (λ x → ∨Intro₂ (_∧_.Elim₂ x))
+p2 : (A B : Set) → A ∧ B ⊃ A ∨ B
+p2 A B = ⊃Intro (λ x → ∨Intro₂ (Elim₂ x)) where open _∧_
 
 p3 : (A B : Set) → (P : A → B → Set) →
      (∃' A (λ (x : A) → ∀' B (λ (y : B) → P x y))) ⊃
      (∀' B (λ (y : B) → ∃' A (λ (x : A) → P x y)))
-p3 A B P = ⊃Intro (λ pr → ∀'Intro (λ b → record { evidence = ∃'.evidence pr
-                                                ; Elim = ∀'Elim (∃'.Elim pr) b
-                                                }))
-
+p3 A B P = ⊃Intro (λ pr → ∀'Intro (λ b → record { evidence = evidence pr
+                                                ; Elim = ∀'Elim (Elim pr) b
+                                                })) where open ∃'
 
 -- classical logic
 postulate
   LEM : (P : Set) → P ∨ (¬ P)
 
-DNE : {A : Set} → (¬ ¬ A) ⊃ A
+DNE : {A : Set} → ¬ ¬ A ⊃ A
 DNE {A} = ⊃Intro (λ y → ∨Elim (LEM A) (λ w → w) (λ z → ⊥Elim (⊃Elim y z)))
